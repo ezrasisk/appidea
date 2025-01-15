@@ -18,6 +18,21 @@ pub struct User {
     pub is_active: bool,
 }
 
+pub enum UserEvent {
+    UserCreated {
+        user_id: Uuid,
+        username: String,
+        email: String,
+        created_at: DateTime<Utc>,
+    },
+    UserUpdated {
+        user_id: Uuid,
+        username: Option<String>,
+        email: Option<String>,
+        updated_at: DateTime<Utc>,
+    },
+    //more event types as needed
+
 pub struct RateLimiter {
     attempts: Arc<MutexMap<Uuid, Vec<DateTime<Utc>>>>
 }
@@ -124,6 +139,60 @@ impl User {
     async fn get_last_login(&self, client: &Client) -> Result<DataTime<Utc>, Box<dyn std::error::Error>> {
         //query for last login time from user, possibly already in other project folder
     }
+
+    async fn store_event(client: &Client, event: &UserEvent) -> Result<(), Box<dyn std::error::Error>> {
+        let event_type = format!("{:?", event);
+        let point = WriteQuery::new("user_events").add_tag("event_type", event_type).add_field("payload", serde_json::to_string(event)?).timestamp(Utc::now());
+        client.query(&point).await?;
+        Ok(())
+
+}
+
+impl UserAggregate {
+    pub fn new() -> Self {
+        UserAggregate {
+            id: Uuid::new_v4(),
+            username: String::new(),
+            email: String::new(),
+            roles: Vec::new(),
+            is_active: true,
+            version: 0,
+        }
+    }
+
+    pub fn apply_event(&mut self, event: UserEvent) {
+        match event {
+            UserEvent::UserCreated { user_id, username, email, .. } => {
+                self.id = user_id;
+                self.username = username;
+                self.email = email;
+                self.version += 1;
+            } UserEvent::UserUpdated {user_id, username, email, .. } => {
+                if let Some(new_username) = username { self.username = new_username; }
+                if let Some(new_email) = email { self.email = new_email; } self.version += 1;}
+            //other events to handle
+        }
+    }
+}
+
+async fn load_user(client: &Client, user_id: Uuid) -> Result<UserAggregate, Box<dyn std::error::Error>> {
+    let mut user = UserAggregate::new();
+    let query = "SELECT * FROM user_events WHERE \"user_id\" = $1 ORDER BY time";
+    let events = client.query(query, &[&user_id.to_string()]).await?;
+    for evet in events.iter() {
+        if let Some(payload) = event.fields.get("payload") {
+            if let Ok(evt) = serde_json::from_str::UserEvent>(pay-load.as_str().unwrap()) {
+                user.apply_event(evt);
+            }
+        }
+    }
+    Ok(user)
+}
+
+async fn handle_create_user(user_id: Uuid, username: String, email: String) -> Result<(), Box<dyn std::error::Error>> {
+    let event = UserEvent::UserCreated { user_id, username, email, created_at:Utc::now() };
+    store_event(&client, &event).await?;
+    Ok(())
 }
 
 impl From<User> for user::User {
