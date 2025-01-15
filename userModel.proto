@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package user;
+
+option (gogoproto.goproto_getters_all) = false;
+
+message User {
+    string id = 1;
+    string username = 2;
+    string email = 3;
+    string created_at = 4;
+    repeated string roles = 5;
+    bool is_active = 6;
+    unit32 version = 7;
+}
+
+service UserService {
+    rpc GetUser (UserRequest) returns (User);
+    rpc CreateUser (User) returns (UserResponse);
+    rpc UpdateUser (User) returns (UserResponse);
+}
+
+message UserRequest {
+    string id = 1;
+}
+
+message UserResponse {
+    bool success = 1;
+    string message = 2;
+}
+
+//more and more. etc
