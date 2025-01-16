@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package sensor_data;
+
+message TemperatureData {
+    string  sensor_id = 1;
+    float temperature = 2;
+    int64 timestamp = 3;
+}
+
+message HumidityData {
+    string sensor_id = 1;
+    float humidity = 2;
+    int64 timestamp = 3;
+}
+
+message SensorData {
+    oneof data {
+        TemperatureData temperature = 1;
+        HumidityData humidity = 2;
+    }
+    string auth_token = 4;
+}
+
+message Data Response {
+    bool success = 1;
+    string message = 2;
+}
+
+// same as before Cd:
+//protoc --prost_out=src --tonic_out=src --proto_path=./protos ./protos/ sensor_data.proto
